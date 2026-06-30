@@ -49,7 +49,7 @@ export default function HeroSection() {
               className="items-center justify-center bg-[#0B0B0F]"
             >
                 <ActivityIndicator size="large" color="#4F8CFF" />
-                <AppText className="mt-4 text-zinc-500 font-medium">Loading courses...</AppText>
+                <AppText className="mt-4 text-zinc-500 font-medium">Loading movies...</AppText>
             </View>
         );
     }
@@ -62,7 +62,7 @@ export default function HeroSection() {
             >
                 <Ionicons name="alert-circle-outline" size={54} color="#EF4444" />
                 <AppText className="mt-4 text-center text-lg font-semibold text-zinc-200">
-                    Failed to load featured courses
+                    Failed to load featured movies
                 </AppText>
                 <AppText className="mt-2 text-center text-sm text-zinc-500 leading-5">
                     Please check your network settings and try again.

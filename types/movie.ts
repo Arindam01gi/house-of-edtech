@@ -8,6 +8,28 @@ export interface TMDBMovie {
   overview: string;
 }
 
+export interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+export interface TMDBCastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface TMDBMovieDetail extends TMDBMovie {
+  genres: TMDBGenre[];
+  runtime: number | null;
+  tagline: string;
+  status: string;
+  credits?: {
+    cast: TMDBCastMember[];
+  };
+}
+
 export interface Movie {
   id: number;
   title: string;
@@ -16,4 +38,24 @@ export interface Movie {
   rating: number;
   releaseDate: string;
   overview: string;
+}
+
+export interface Genre {
+  id: number;
+  name: string;
+}
+
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  avatar: string;
+}
+
+export interface MovieDetail extends Movie {
+  genres: Genre[];
+  runtime: number | null;
+  tagline: string;
+  status: string;
+  cast: CastMember[];
 }

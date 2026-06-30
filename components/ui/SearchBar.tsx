@@ -11,7 +11,7 @@ export default function SearchBar() {
       />
 
       <TextInput
-        placeholder="Search courses..."
+        placeholder="Search movies and web series..."
         placeholderTextColor="#A1A1AA"
         className="ml-3 flex-1 text-white"
       />

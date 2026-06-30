@@ -4,11 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 
-interface HeaderButtonProps {
+type HeaderButtonProps = {
   icon: keyof typeof Ionicons.glyphMap;
   onPress?: () => void;
   badge?: boolean;
-}
+};
 
 function HeaderButton({ icon, onPress, badge }: HeaderButtonProps) {
   const scale = useSharedValue(1);

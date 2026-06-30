@@ -2,10 +2,10 @@ import { Theme } from "@/theme";
 import { ReactNode } from "react";
 import { SafeAreaView, Edge } from "react-native-safe-area-context";
 
-interface ContainerProps {
+type ContainerProps = {
   children: ReactNode;
   edges?: Edge[];
-}
+};
 
 export default function Container({ children, edges }: ContainerProps) {
   return (
