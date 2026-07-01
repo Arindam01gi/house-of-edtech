@@ -2,6 +2,7 @@ import HorizontalSection from "@/components/home/HorizontalSection";
 import LoadingSkeleton from "@/components/home/LoadingSkeleton";
 import { AppText } from "@/components/ui/AppText";
 import { useMovieDetails, useSimilarMovies } from "@/hooks/useMovieDetails";
+import { useAppTheme } from "@/providers/AppThemeProvider";
 import { Movie } from "@/types/movie";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -40,18 +41,30 @@ function DetailStat({
   icon,
   label,
   value,
+  colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
   return (
-    <View className="flex-1 rounded-2xl border border-white/10 bg-[#14141A] px-3 py-4">
-      <Ionicons name={icon} size={18} color="#4F8CFF" />
-      <AppText className="mt-3 text-xs font-medium text-zinc-500">
+    <View
+      className="flex-1 rounded-2xl border px-3 py-4"
+      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+    >
+      <Ionicons name={icon} size={18} color={colors.primary} />
+      <AppText
+        className="mt-3 text-xs font-medium"
+        style={{ color: colors.mutedText }}
+      >
         {label}
       </AppText>
-      <AppText className="mt-1 text-sm font-bold text-white" numberOfLines={1}>
+      <AppText
+        className="mt-1 text-sm font-bold"
+        style={{ color: colors.text }}
+        numberOfLines={1}
+      >
         {value}
       </AppText>
     </View>
@@ -62,6 +75,7 @@ export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const movieId = Number(id);
 
   const {
@@ -97,7 +111,10 @@ export default function MovieDetailScreen() {
     useCallback(({ item }) => {
       return (
         <View className="mr-4 w-24">
-          <View className="h-24 w-24 overflow-hidden rounded-2xl bg-[#14141A]">
+          <View
+            className="h-24 w-24 overflow-hidden rounded-2xl"
+            style={{ backgroundColor: colors.surface }}
+          >
             {item.avatar ? (
               <Image
                 source={{ uri: item.avatar }}
@@ -107,23 +124,35 @@ export default function MovieDetailScreen() {
               />
             ) : (
               <View className="flex-1 items-center justify-center">
-                <Ionicons name="person-outline" size={28} color="#71717A" />
+                <Ionicons
+                  name="person-outline"
+                  size={28}
+                  color={colors.mutedText}
+                />
               </View>
             )}
           </View>
-          <AppText className="mt-2 text-xs font-bold text-white" numberOfLines={1}>
+          <AppText
+            className="mt-2 text-xs font-bold"
+            style={{ color: colors.text }}
+            numberOfLines={1}
+          >
             {item.name}
           </AppText>
-          <AppText className="mt-1 text-[11px] text-zinc-500" numberOfLines={1}>
+          <AppText
+            className="mt-1 text-[11px]"
+            style={{ color: colors.mutedText }}
+            numberOfLines={1}
+          >
             {item.character}
           </AppText>
         </View>
       );
-    }, []);
+    }, [colors.mutedText, colors.surface, colors.text]);
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-[#0B0B0F]">
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <LoadingSkeleton variant="detail" />
       </View>
     );
@@ -132,26 +161,39 @@ export default function MovieDetailScreen() {
   if (isError || !movie) {
     return (
       <View
-        className="flex-1 items-center justify-center bg-[#0B0B0F] px-6"
-        style={{ paddingTop: insets.top }}
+        className="flex-1 items-center justify-center px-6"
+        style={{ paddingTop: insets.top, backgroundColor: colors.background }}
       >
         <Ionicons name="alert-circle-outline" size={54} color="#EF4444" />
-        <AppText className="mt-4 text-center text-lg font-bold text-white">
+        <AppText
+          className="mt-4 text-center text-lg font-bold"
+          style={{ color: colors.text }}
+        >
           Failed to load movie details
         </AppText>
-        <AppText className="mt-2 text-center text-sm leading-5 text-zinc-500">
+        <AppText
+          className="mt-2 text-center text-sm leading-5"
+          style={{ color: colors.mutedText }}
+        >
           Please check your network settings and try again.
         </AppText>
         <View className="mt-6 flex-row gap-3">
           <Pressable
             onPress={() => router.back()}
-            className="rounded-2xl border border-white/10 bg-white/10 px-5 py-3"
+            className="rounded-2xl border px-5 py-3"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
           >
-            <AppText className="font-bold text-white">Go Back</AppText>
+            <AppText className="font-bold" style={{ color: colors.text }}>
+              Go Back
+            </AppText>
           </Pressable>
           <Pressable
             onPress={() => refetch()}
-            className="rounded-2xl bg-[#4F8CFF] px-5 py-3"
+            className="rounded-2xl px-5 py-3"
+            style={{ backgroundColor: colors.primary }}
           >
             <AppText className="font-bold text-white">Retry</AppText>
           </Pressable>
@@ -161,7 +203,7 @@ export default function MovieDetailScreen() {
   }
 
   return (
-    <View className="flex-1 bg-[#0B0B0F]">
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 36 }}
@@ -177,10 +219,11 @@ export default function MovieDetailScreen() {
           <LinearGradient
             colors={[
               "rgba(11, 11, 15, 0.25)",
-              "rgba(11, 11, 15, 0.58)",
-              "#0B0B0F",
+              isDark ? "rgba(11, 11, 15, 0.58)" : "rgba(16, 18, 26, 0.50)",
+              isDark ? "rgba(11, 11, 15, 0.95)" : "rgba(247, 248, 252, 0.64)",
+              colors.background,
             ]}
-            locations={[0, 0.58, 1]}
+            locations={[0, 0.58, 0.9, 1]}
             className="absolute inset-0 justify-end px-5 pb-8"
           >
             <AppText
@@ -231,31 +274,52 @@ export default function MovieDetailScreen() {
               icon="star-outline"
               label="Rating"
               value={movie.rating.toFixed(1)}
+              colors={colors}
             />
             <DetailStat
               icon="time-outline"
               label="Duration"
               value={formatRuntime(movie.runtime)}
+              colors={colors}
             />
             <DetailStat
               icon="calendar-outline"
               label="Release"
               value={releaseYear(movie.releaseDate)}
+              colors={colors}
             />
           </View>
 
-          <View className="mt-6 rounded-3xl border border-white/10 bg-[#14141A] p-5">
-            <AppText className="text-xs font-bold uppercase tracking-widest text-[#4F8CFF]">
+          <View
+            className="mt-6 rounded-3xl border p-5"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            }}
+          >
+            <AppText
+              className="text-xs font-bold uppercase tracking-widest"
+              style={{ color: colors.primary }}
+            >
               Genres
             </AppText>
-            <AppText className="mt-2 text-sm font-semibold text-zinc-200">
+            <AppText
+              className="mt-2 text-sm font-semibold"
+              style={{ color: colors.text }}
+            >
               {genres || "Not available"}
             </AppText>
 
-            <AppText className="mt-6 text-xs font-bold uppercase tracking-widest text-[#4F8CFF]">
+            <AppText
+              className="mt-6 text-xs font-bold uppercase tracking-widest"
+              style={{ color: colors.primary }}
+            >
               Storyline
             </AppText>
-            <AppText className="mt-2 text-sm leading-6 text-zinc-400">
+            <AppText
+              className="mt-2 text-sm leading-6"
+              style={{ color: colors.mutedText }}
+            >
               {movie.overview || "No overview available for this title."}
             </AppText>
           </View>
@@ -264,7 +328,9 @@ export default function MovieDetailScreen() {
         {movie.cast.length > 0 ? (
           <View className="mt-8">
             <View className="px-5">
-              <AppText variant="title">Featured Cast</AppText>
+              <AppText variant="title" style={{ color: colors.text }}>
+                Featured Cast
+              </AppText>
             </View>
             <FlatList
               data={movie.cast}

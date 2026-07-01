@@ -2,6 +2,7 @@ import MovieCard from "@/components/home/MovieCard";
 import LoadingSkeleton from "@/components/home/LoadingSkeleton";
 import { AppText } from "@/components/ui/AppText";
 import SectionTitle from "@/components/ui/SectionTitle";
+import { useAppTheme } from "@/providers/AppThemeProvider";
 import { Movie } from "@/types/movie";
 import { Ionicons } from "@expo/vector-icons";
 import React, { memo, useCallback } from "react";
@@ -38,25 +39,40 @@ function SectionState({
   onAction?: () => void;
   loading?: boolean;
 }) {
+  const { colors } = useAppTheme();
+
   return (
-    <View className="mx-5 h-40 items-center justify-center rounded-3xl border border-white/10 bg-[#14141A] px-5">
+    <View
+      className="mx-5 h-40 items-center justify-center rounded-3xl border px-5"
+      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+    >
       {loading ? (
-        <ActivityIndicator color="#4F8CFF" />
+        <ActivityIndicator color={colors.primary} />
       ) : (
-        <Ionicons name="film-outline" size={28} color="#71717A" />
+        <Ionicons name="film-outline" size={28} color={colors.mutedText} />
       )}
-      <AppText className="mt-3 text-center text-sm font-bold text-zinc-200">
+      <AppText
+        className="mt-3 text-center text-sm font-bold"
+        style={{ color: colors.text }}
+      >
         {title}
       </AppText>
-      <AppText className="mt-1 text-center text-xs leading-5 text-zinc-500">
+      <AppText
+        className="mt-1 text-center text-xs leading-5"
+        style={{ color: colors.mutedText }}
+      >
         {message}
       </AppText>
       {actionLabel && onAction ? (
         <Pressable
           onPress={onAction}
-          className="mt-4 rounded-xl border border-white/10 bg-white/10 px-4 py-2"
+          className="mt-4 rounded-xl border px-4 py-2"
+          style={{
+            backgroundColor: colors.elevated,
+            borderColor: colors.border,
+          }}
         >
-          <AppText className="text-xs font-bold text-white">
+          <AppText className="text-xs font-bold" style={{ color: colors.text }}>
             {actionLabel}
           </AppText>
         </Pressable>

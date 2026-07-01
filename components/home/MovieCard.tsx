@@ -1,4 +1,5 @@
 import { AppText } from "@/components/ui/AppText";
+import { useAppTheme } from "@/providers/AppThemeProvider";
 import { Movie } from "@/types/movie";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -22,6 +23,7 @@ const CARD_WIDTH = {
 };
 
 function MovieCard({ movie, size = "poster", onPress }: Props) {
+  const { colors } = useAppTheme();
   const scale = useSharedValue(1);
   const width = CARD_WIDTH[size];
   const imageHeight = size === "poster" ? 220 : 184;
@@ -54,8 +56,13 @@ function MovieCard({ movie, size = "poster", onPress }: Props) {
     >
       <Animated.View style={animatedStyle}>
         <View
-          className="overflow-hidden rounded-3xl border border-white/10 bg-[#14141A]"
-          style={{ width, height: imageHeight }}
+          className="overflow-hidden rounded-3xl border"
+          style={{
+            width,
+            height: imageHeight,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }}
         >
           <Image
             source={{ uri: movie.poster || movie.backdrop }}
@@ -75,18 +82,28 @@ function MovieCard({ movie, size = "poster", onPress }: Props) {
         </View>
 
         <AppText
-          className="mt-3 text-sm font-bold leading-5 text-white"
+          className="mt-3 text-sm font-bold leading-5"
+          style={{ color: colors.text }}
           numberOfLines={2}
         >
           {movie.title}
         </AppText>
 
         <View className="mt-1 flex-row items-center">
-          <AppText className="text-xs font-medium text-zinc-500">
+          <AppText
+            className="text-xs font-medium"
+            style={{ color: colors.mutedText }}
+          >
             {releaseYear}
           </AppText>
-          <View className="mx-2 h-1 w-1 rounded-full bg-zinc-700" />
-          <AppText className="text-xs font-medium text-zinc-500">
+          <View
+            className="mx-2 h-1 w-1 rounded-full"
+            style={{ backgroundColor: colors.border }}
+          />
+          <AppText
+            className="text-xs font-medium"
+            style={{ color: colors.mutedText }}
+          >
             Movie
           </AppText>
         </View>

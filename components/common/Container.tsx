@@ -1,4 +1,4 @@
-import { Theme } from "@/theme";
+import { useAppTheme } from "@/providers/AppThemeProvider";
 import { ReactNode } from "react";
 import { SafeAreaView, Edge } from "react-native-safe-area-context";
 
@@ -8,10 +8,12 @@ type ContainerProps = {
 };
 
 export default function Container({ children, edges }: ContainerProps) {
+  const { colors } = useAppTheme();
+
   return (
     <SafeAreaView
       className="flex-1"
-      style={{ backgroundColor:  Theme.colors.background }}
+      style={{ backgroundColor: colors.background }}
       edges={edges}
     >
       {children}

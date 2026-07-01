@@ -1,19 +1,25 @@
+import { useAppTheme } from "@/providers/AppThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
-import { TextInput, View } from "react-native";
+import { TextInput, TextInputProps, View } from "react-native";
 
-export default function SearchBar() {
+type Props = TextInputProps;
+
+export default function SearchBar(props: Props) {
+  const { colors } = useAppTheme();
+
   return (
-    <View className="flex-row items-center rounded-2xl bg-zinc-800 px-4 py-3">
-      <Ionicons
-        name="search"
-        size={20}
-        color="#A1A1AA"
-      />
+    <View
+      className="flex-row items-center rounded-3xl border px-5 py-4"
+      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+    >
+      <Ionicons name="search" size={22} color={colors.mutedText} />
 
       <TextInput
         placeholder="Search movies and web series..."
-        placeholderTextColor="#A1A1AA"
-        className="ml-3 flex-1 text-white"
+        placeholderTextColor={colors.mutedText}
+        className="ml-3 flex-1 text-base font-semibold"
+        style={{ color: colors.text }}
+        {...props}
       />
     </View>
   );

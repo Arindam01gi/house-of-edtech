@@ -1,6 +1,11 @@
+import { AppThemeProvider, useAppTheme } from "@/providers/AppThemeProvider";
 import { PaperProvider } from "@/providers/PaperProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -9,12 +14,10 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import "../global.css";
 
-
 void SplashScreen.hideAsync();
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-
   const [loaded, error] = useFonts({
     InterRegular: require("../assets/fonts/Inter-Regular.ttf"),
     InterMedium: require("../assets/fonts/Inter-Medium.ttf"),
@@ -33,10 +36,20 @@ export default function RootLayout() {
   }
 
   return (
+    <AppThemeProvider>
+      <AppShell />
+    </AppThemeProvider>
+  );
+}
+
+function AppShell() {
+  const { isDark } = useAppTheme();
+
+  return (
     <PaperProvider>
       <QueryProvider>
-        <ThemeProvider value={DarkTheme}>
-          <StatusBar style="light" />
+        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+          <StatusBar style={isDark ? "light" : "dark"} />
 
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
