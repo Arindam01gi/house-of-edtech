@@ -4,14 +4,18 @@ import {
   MovieDetail,
   TMDBCastMember,
   TMDBMovie,
+  TMDBMovieChangesResponse,
   TMDBMovieDetail,
+  TMDBVideo,
 } from "@/types/movie";
 
 export const BASE_URL = process.env.EXPO_PUBLIC_TMDB_BASE_URL!;
 export const API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY!;
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
+const YOUTUBE_WATCH_URL = "https://www.youtube.com/watch?v=";
 const DEFAULT_DISCOVER_PARAMS =
   "include_adult=false&include_video=false&language=en-US&page=1";
+const CHANGED_MOVIES_PAGE_SIZE = 20;
 
 function mapMovie(movie: TMDBMovie): Movie {
   return {
@@ -40,6 +44,59 @@ function mapCastMember(member: TMDBCastMember): CastMember {
   };
 }
 
+function getPreferredYouTubeVideo(videos: TMDBVideo[] = []) {
+  const youtubeVideos = videos.filter((video) => video.site === "YouTube");
+  const preferred =
+    youtubeVideos.find((video) => video.official && video.type === "Trailer") ??
+    youtubeVideos.find((video) => video.type === "Trailer") ??
+    youtubeVideos.find((video) => video.official && video.type === "Teaser") ??
+    youtubeVideos[0];
+
+  return preferred?.key;
+}
+
+function withYouTubeKey(movie: Movie, youtubeKey?: string): Movie {
+  if (!youtubeKey) {
+    return movie;
+  }
+
+  return {
+    ...movie,
+    youtubeKey,
+    youtubeUrl: `${YOUTUBE_WATCH_URL}${youtubeKey}`,
+  };
+}
+
+async function getMovieYouTubeKey(movieId: number) {
+  const url = `${BASE_URL}/movie/${movieId}/videos?api_key=${API_KEY}&language=en-US`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    return undefined;
+  }
+
+  const data = (await response.json()) as { results?: TMDBVideo[] };
+
+  return getPreferredYouTubeVideo(data.results);
+}
+
+async function enrichMoviesWithYouTubeKeys(
+  movies: Movie[],
+  limit = movies.length,
+) {
+  const featuredMovies = movies.slice(0, limit);
+  const rest = movies.slice(limit);
+  const enrichedFeaturedMovies = await Promise.all(
+    featuredMovies.map(async (movie) => {
+      const youtubeKey = await getMovieYouTubeKey(movie.id);
+
+      return withYouTubeKey(movie, youtubeKey);
+    }),
+  );
+
+  return [...enrichedFeaturedMovies, ...rest];
+}
+
 export async function getNowPlayingMovies(): Promise<Movie[]> {
   const url = `${BASE_URL}/movie/now_playing?api_key=${API_KEY}&language=en-US&page=1`;
   const response = await fetch(url);
@@ -49,7 +106,7 @@ export async function getNowPlayingMovies(): Promise<Movie[]> {
     return [];
   }
 
-  return data.results.map(mapMovie);
+  return enrichMoviesWithYouTubeKeys(data.results.map(mapMovie), 5);
 }
 
 async function getDiscoverMovies(query: string): Promise<Movie[]> {
@@ -96,7 +153,7 @@ export async function getUpcomingMovies(): Promise<Movie[]> {
 }
 
 export async function getMovieDetails(movieId: number): Promise<MovieDetail> {
-  const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}&language=en-US&append_to_response=credits`;
+  const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}&language=en-US&append_to_response=credits,videos`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -105,13 +162,59 @@ export async function getMovieDetails(movieId: number): Promise<MovieDetail> {
 
   const movie = (await response.json()) as TMDBMovieDetail;
 
+  const youtubeKey = getPreferredYouTubeVideo(movie.videos?.results);
+
   return {
-    ...mapMovie(movie),
+    ...withYouTubeKey(mapMovie(movie), youtubeKey),
     genres: movie.genres,
     runtime: movie.runtime,
     tagline: movie.tagline,
     status: movie.status,
     cast: movie.credits?.cast.slice(0, 8).map(mapCastMember) ?? [],
+  };
+}
+
+async function getMovieSummary(movieId: number): Promise<Movie | null> {
+  const url = `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}&language=en-US`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const movie = (await response.json()) as TMDBMovie;
+
+  if (!movie.title || (!movie.poster_path && !movie.backdrop_path)) {
+    return null;
+  }
+
+  return mapMovie(movie);
+}
+
+export async function getChangedMovies(page = 1) {
+  const url = `${BASE_URL}/movie/changes?api_key=${API_KEY}&page=${page}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch changed movies");
+  }
+
+  const data = (await response.json()) as TMDBMovieChangesResponse;
+  const movieIds = data.results
+    .filter((change) => !change.adult)
+    .slice(0, CHANGED_MOVIES_PAGE_SIZE)
+    .map((change) => change.id);
+
+  const settledMovies = await Promise.allSettled(
+    movieIds.map((movieId) => getMovieSummary(movieId)),
+  );
+
+  return {
+    page: data.page,
+    totalPages: data.total_pages,
+    movies: settledMovies
+      .map((result) => (result.status === "fulfilled" ? result.value : null))
+      .filter((movie): movie is Movie => Boolean(movie)),
   };
 }
 

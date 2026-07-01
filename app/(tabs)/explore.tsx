@@ -1,15 +1,9 @@
 import Container from "@/components/common/Container";
-import CategoryChip from "@/components/home/CategoryChip";
 import MovieCard from "@/components/home/MovieCard";
-import SearchBar from "@/components/ui/SearchBar";
 import { AppText } from "@/components/ui/AppText";
-import {
-  usePopularMovies,
-  useTopRatedMovies,
-  useUpcomingMovies,
-} from "@/hooks/useHeroMovies";
+import SearchBar from "@/components/ui/SearchBar";
+import { useChangedMovies } from "@/hooks/useExploreMovies";
 import { useAppTheme } from "@/providers/AppThemeProvider";
-import { Category } from "@/types/category";
 import { Movie } from "@/types/movie";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -19,14 +13,21 @@ import {
   FlatList,
   ListRenderItem,
   Pressable,
+  RefreshControl,
   View,
 } from "react-native";
 
-const exploreCategories: Category[] = [
-  { id: "all", title: "All", icon: "apps-outline" },
-  { id: "popular", title: "Popular", icon: "flame-outline" },
+type ExploreFilter = "all" | "top-rated" | "recent" | "underrated";
+
+const exploreFilters: {
+  id: ExploreFilter;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { id: "all", title: "All", icon: "grid-outline" },
   { id: "top-rated", title: "Top Rated", icon: "star-outline" },
-  { id: "upcoming", title: "Upcoming", icon: "calendar-outline" },
+  { id: "recent", title: "Recent", icon: "calendar-outline" },
+  { id: "underrated", title: "Underrated", icon: "diamond-outline" },
 ];
 
 function uniqueMovies(movies: Movie[]) {
@@ -39,100 +40,112 @@ function uniqueMovies(movies: Movie[]) {
   return Array.from(byId.values());
 }
 
+function getReleaseYear(movie: Movie) {
+  const year = Number(movie.releaseDate.split("-")[0]);
+
+  return Number.isFinite(year) ? year : 0;
+}
+
+function ExploreFilterChip({
+  filter,
+  selected,
+  onPress,
+}: {
+  filter: (typeof exploreFilters)[number];
+  selected: boolean;
+  onPress: (filter: ExploreFilter) => void;
+}) {
+  const { colors } = useAppTheme();
+
+  return (
+    <Pressable
+      onPress={() => onPress(filter.id)}
+      className="mr-2 h-10 flex-row items-center rounded-full border px-4"
+      style={({ pressed }) => ({
+        backgroundColor: selected ? colors.primary : colors.surface,
+        borderColor: selected ? colors.primary : colors.border,
+        opacity: pressed ? 0.78 : 1,
+      })}
+    >
+      <Ionicons
+        name={filter.icon}
+        size={15}
+        color={selected ? "white" : colors.mutedText}
+      />
+      <AppText
+        className="ml-2 text-xs font-bold"
+        style={{ color: selected ? "white" : colors.text }}
+      >
+        {filter.title}
+      </AppText>
+    </Pressable>
+  );
+}
+
 export default function ExploreScreen() {
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [search, setSearch] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState<ExploreFilter>("all");
   const { colors } = useAppTheme();
   const router = useRouter();
 
-  const popularMovies = usePopularMovies();
-  const topRatedMovies = useTopRatedMovies();
-  const upcomingMovies = useUpcomingMovies();
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    refetch,
+    fetchNextPage,
+    isRefetching,
+  } = useChangedMovies();
 
-  const selectedMovies = useMemo(() => {
-    if (selectedCategory === "popular") {
-      return popularMovies.data ?? [];
+  const movies = useMemo(
+    () => uniqueMovies(data?.pages.flatMap((page) => page.movies) ?? []),
+    [data?.pages],
+  );
+
+  const filteredByCategory = useMemo(() => {
+    if (selectedFilter === "top-rated") {
+      return movies.filter((movie) => movie.rating >= 7.5);
     }
 
-    if (selectedCategory === "top-rated") {
-      return topRatedMovies.data ?? [];
+    if (selectedFilter === "recent") {
+      const currentYear = new Date().getFullYear();
+
+      return movies.filter((movie) => getReleaseYear(movie) >= currentYear - 2);
     }
 
-    if (selectedCategory === "upcoming") {
-      return upcomingMovies.data ?? [];
+    if (selectedFilter === "underrated") {
+      return movies.filter(
+        (movie) =>
+          movie.rating >= 6 &&
+          movie.rating < 7.5 &&
+          Boolean(movie.overview.trim()),
+      );
     }
 
-    return uniqueMovies([
-      ...(popularMovies.data ?? []),
-      ...(topRatedMovies.data ?? []),
-      ...(upcomingMovies.data ?? []),
-    ]);
-  }, [
-    popularMovies.data,
-    selectedCategory,
-    topRatedMovies.data,
-    upcomingMovies.data,
-  ]);
+    return movies;
+  }, [movies, selectedFilter]);
 
   const filteredMovies = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
     if (!normalizedSearch) {
-      return selectedMovies;
+      return filteredByCategory;
     }
 
-    return selectedMovies.filter((movie) => {
+    return filteredByCategory.filter((movie) => {
       const title = movie.title.toLowerCase();
       const overview = movie.overview.toLowerCase();
+      const releaseYear = movie.releaseDate.split("-")[0] ?? "";
 
       return (
-        title.includes(normalizedSearch) || overview.includes(normalizedSearch)
+        title.includes(normalizedSearch) ||
+        overview.includes(normalizedSearch) ||
+        releaseYear.includes(normalizedSearch)
       );
     });
-  }, [search, selectedMovies]);
-
-  const isLoading =
-    selectedCategory === "all"
-      ? popularMovies.isLoading ||
-        topRatedMovies.isLoading ||
-        upcomingMovies.isLoading
-      : selectedCategory === "popular"
-        ? popularMovies.isLoading
-        : selectedCategory === "top-rated"
-          ? topRatedMovies.isLoading
-          : upcomingMovies.isLoading;
-
-  const isError =
-    selectedCategory === "all"
-      ? popularMovies.isError ||
-        topRatedMovies.isError ||
-        upcomingMovies.isError
-      : selectedCategory === "popular"
-        ? popularMovies.isError
-        : selectedCategory === "top-rated"
-          ? topRatedMovies.isError
-          : upcomingMovies.isError;
-
-  const handleRetry = useCallback(() => {
-    if (selectedCategory === "popular") {
-      popularMovies.refetch();
-      return;
-    }
-
-    if (selectedCategory === "top-rated") {
-      topRatedMovies.refetch();
-      return;
-    }
-
-    if (selectedCategory === "upcoming") {
-      upcomingMovies.refetch();
-      return;
-    }
-
-    popularMovies.refetch();
-    topRatedMovies.refetch();
-    upcomingMovies.refetch();
-  }, [popularMovies, selectedCategory, topRatedMovies, upcomingMovies]);
+  }, [filteredByCategory, search]);
 
   const handleMoviePress = useCallback(
     (movie: Movie) => {
@@ -144,64 +157,114 @@ export default function ExploreScreen() {
     [router],
   );
 
-  const renderCategory = useCallback(
-    ({ item }: { item: Category }) => (
-      <CategoryChip
-        category={item}
-        selected={selectedCategory === item.id}
-        onPress={(category) => setSelectedCategory(category.id)}
-      />
-    ),
-    [selectedCategory],
-  );
+  const handleEndReached = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage || search.trim()) {
+      return;
+    }
+
+    fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, search]);
 
   const renderMovie: ListRenderItem<Movie> = useCallback(
     ({ item }) => <MovieCard movie={item} onPress={handleMoviePress} />,
     [handleMoviePress],
   );
 
+  const renderFilter = useCallback(
+    ({ item }: { item: (typeof exploreFilters)[number] }) => (
+      <ExploreFilterChip
+        filter={item}
+        selected={selectedFilter === item.id}
+        onPress={setSelectedFilter}
+      />
+    ),
+    [selectedFilter],
+  );
+
   const renderHeader = useCallback(
     () => (
-      <View className="px-5 pb-5 pt-4">
-        <View className="mb-5">
+      <View className="pb-5">
+        <View className="px-5 pb-5 pt-4">
           <AppText
-            className="text-3xl font-bold"
-            style={{ color: colors.text }}
+            className="text-xs font-bold uppercase tracking-widest"
+            style={{ color: colors.primary }}
           >
-            Explore
+            Discover
           </AppText>
           <AppText
-            className="mt-1 text-sm font-semibold"
+            className="mt-2 text-3xl font-bold"
+            style={{ color: colors.text }}
+          >
+            Explore Movies
+          </AppText>
+          <AppText
+            className="mt-2 text-sm font-semibold leading-5"
             style={{ color: colors.mutedText }}
           >
-            Search and filter movies
+            Fresh titles, ratings, and releases in one clean feed.
           </AppText>
         </View>
 
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-        />
-
-        <View className="mt-5">
-          <FlatList
-            data={exploreCategories}
-            horizontal
-            keyExtractor={(item) => item.id}
-            renderItem={renderCategory}
-            showsHorizontalScrollIndicator={false}
+        <View className="px-5">
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search movies"
+            returnKeyType="search"
           />
         </View>
 
-        <View className="mt-5 flex-row items-center justify-between">
-          <AppText className="text-lg font-bold" style={{ color: colors.text }}>
-            {filteredMovies.length} results
-          </AppText>
+        <FlatList
+          data={exploreFilters}
+          horizontal
+          keyExtractor={(item) => item.id}
+          renderItem={renderFilter}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18 }}
+        />
+
+        <View className="mt-6 flex-row items-end justify-between px-5">
+          <View>
+            <AppText
+              className="text-xl font-bold"
+              style={{ color: colors.text }}
+            >
+              Movies
+            </AppText>
+            <AppText
+              className="mt-1 text-xs font-semibold"
+              style={{ color: colors.mutedText }}
+            >
+              {filteredMovies.length} results
+            </AppText>
+          </View>
+          {search.trim() ? (
+            <Pressable
+              onPress={() => setSearch("")}
+              className="h-9 flex-row items-center rounded-full px-3"
+              style={{ backgroundColor: colors.surface }}
+            >
+              <Ionicons name="close" size={14} color={colors.mutedText} />
+              <AppText
+                className="ml-1 text-xs font-bold"
+                style={{ color: colors.text }}
+              >
+                Clear
+              </AppText>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     ),
-    [colors, filteredMovies.length, renderCategory, search],
+    [
+      colors.mutedText,
+      colors.primary,
+      colors.surface,
+      colors.text,
+      filteredMovies.length,
+      renderFilter,
+      search,
+    ],
   );
 
   const renderListState = useCallback(() => {
@@ -213,7 +276,7 @@ export default function ExploreScreen() {
             className="mt-4 font-semibold"
             style={{ color: colors.mutedText }}
           >
-            Loading movies...
+            Loading updated movies...
           </AppText>
         </View>
       );
@@ -233,7 +296,7 @@ export default function ExploreScreen() {
             className="mt-4 text-center text-lg font-bold"
             style={{ color: colors.text }}
           >
-            Could not load explore
+            Could not load updates
           </AppText>
           <AppText
             className="mt-2 text-center text-sm leading-5"
@@ -242,7 +305,7 @@ export default function ExploreScreen() {
             Check your connection and try again.
           </AppText>
           <Pressable
-            onPress={handleRetry}
+            onPress={() => refetch()}
             className="mt-5 rounded-2xl px-5 py-3"
             style={{ backgroundColor: colors.primary }}
           >
@@ -268,7 +331,7 @@ export default function ExploreScreen() {
           className="mt-2 text-center text-sm leading-5"
           style={{ color: colors.mutedText }}
         >
-          Try another search or filter.
+          Try another search.
         </AppText>
       </View>
     );
@@ -278,10 +341,28 @@ export default function ExploreScreen() {
     colors.primary,
     colors.surface,
     colors.text,
-    handleRetry,
     isError,
     isLoading,
+    refetch,
   ]);
+
+  const renderFooter = useCallback(() => {
+    if (!isFetchingNextPage) {
+      return <View className="h-8" />;
+    }
+
+    return (
+      <View className="items-center py-6">
+        <ActivityIndicator color={colors.primary} />
+        <AppText
+          className="mt-3 text-xs font-semibold"
+          style={{ color: colors.mutedText }}
+        >
+          Loading more updates...
+        </AppText>
+      </View>
+    );
+  }, [colors.mutedText, colors.primary, isFetchingNextPage]);
 
   return (
     <Container edges={["top", "left", "right"]}>
@@ -291,6 +372,7 @@ export default function ExploreScreen() {
         renderItem={renderMovie}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderListState}
+        ListFooterComponent={renderFooter}
         numColumns={2}
         columnWrapperStyle={{
           justifyContent: "space-between",
@@ -298,7 +380,16 @@ export default function ExploreScreen() {
         }}
         contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
-        initialNumToRender={6}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching && !isFetchingNextPage}
+            tintColor={colors.primary}
+            onRefresh={() => refetch()}
+          />
+        }
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.8}
+        initialNumToRender={8}
         maxToRenderPerBatch={8}
         updateCellsBatchingPeriod={50}
         windowSize={7}

@@ -11,12 +11,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
   FlatList,
+  Linking,
   ListRenderItem,
   Pressable,
   ScrollView,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 function formatRuntime(minutes: number | null) {
   if (!minutes) {
@@ -78,12 +82,7 @@ export default function MovieDetailScreen() {
   const { colors, isDark } = useAppTheme();
   const movieId = Number(id);
 
-  const {
-    data: movie,
-    isLoading,
-    isError,
-    refetch,
-  } = useMovieDetails(movieId);
+  const { data: movie, isLoading, isError, refetch } = useMovieDetails(movieId);
 
   const {
     data: similarMovies,
@@ -107,62 +106,84 @@ export default function MovieDetailScreen() {
     [router],
   );
 
+  const handleWatchNow = useCallback(() => {
+    if (!movie) {
+      return;
+    }
+
+    const url =
+      movie.youtubeUrl ??
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        `${movie.title} official trailer`,
+      )}`;
+
+    void Linking.openURL(url);
+  }, [movie]);
+
   const renderCast: ListRenderItem<NonNullable<typeof movie>["cast"][number]> =
-    useCallback(({ item }) => {
-      return (
-        <View className="mr-4 w-24">
-          <View
-            className="h-24 w-24 overflow-hidden rounded-2xl"
-            style={{ backgroundColor: colors.surface }}
-          >
-            {item.avatar ? (
-              <Image
-                source={{ uri: item.avatar }}
-                style={{ flex: 1 }}
-                contentFit="cover"
-                transition={180}
-              />
-            ) : (
-              <View className="flex-1 items-center justify-center">
-                <Ionicons
-                  name="person-outline"
-                  size={28}
-                  color={colors.mutedText}
+    useCallback(
+      ({ item }) => {
+        return (
+          <View className="mr-4 w-24">
+            <View
+              className="h-24 w-24 overflow-hidden rounded-2xl"
+              style={{ backgroundColor: colors.surface }}
+            >
+              {item.avatar ? (
+                <Image
+                  source={{ uri: item.avatar }}
+                  style={{ flex: 1 }}
+                  contentFit="cover"
+                  transition={180}
                 />
-              </View>
-            )}
+              ) : (
+                <View className="flex-1 items-center justify-center">
+                  <Ionicons
+                    name="person-outline"
+                    size={28}
+                    color={colors.mutedText}
+                  />
+                </View>
+              )}
+            </View>
+            <AppText
+              className="mt-2 text-xs font-bold"
+              style={{ color: colors.text }}
+              numberOfLines={1}
+            >
+              {item.name}
+            </AppText>
+            <AppText
+              className="mt-1 text-[11px]"
+              style={{ color: colors.mutedText }}
+              numberOfLines={1}
+            >
+              {item.character}
+            </AppText>
           </View>
-          <AppText
-            className="mt-2 text-xs font-bold"
-            style={{ color: colors.text }}
-            numberOfLines={1}
-          >
-            {item.name}
-          </AppText>
-          <AppText
-            className="mt-1 text-[11px]"
-            style={{ color: colors.mutedText }}
-            numberOfLines={1}
-          >
-            {item.character}
-          </AppText>
-        </View>
-      );
-    }, [colors.mutedText, colors.surface, colors.text]);
+        );
+      },
+      [colors.mutedText, colors.surface, colors.text],
+    );
 
   if (isLoading) {
     return (
-      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <SafeAreaView
+        className="flex-1"
+        edges={["top", "right", "bottom", "left"]}
+        style={{ backgroundColor: colors.background }}
+      >
         <LoadingSkeleton variant="detail" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError || !movie) {
     return (
-      <View
+      <SafeAreaView
+        edges={["top", "right", "bottom", "left"]}
         className="flex-1 items-center justify-center px-6"
-        style={{ paddingTop: insets.top, backgroundColor: colors.background }}
+        style={{ backgroundColor: colors.background }}
       >
         <Ionicons name="alert-circle-outline" size={54} color="#EF4444" />
         <AppText
@@ -198,15 +219,20 @@ export default function MovieDetailScreen() {
             <AppText className="font-bold text-white">Retry</AppText>
           </Pressable>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1" style={{ backgroundColor: colors.background }}>
+    <SafeAreaView
+      className="flex-1"
+      edges={["top", "right", "bottom", "left"]}
+      style={{ backgroundColor: colors.background }}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 36 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 36 }}
+        contentInsetAdjustmentBehavior="never"
       >
         <View className="h-[520px]">
           <Image
@@ -255,6 +281,22 @@ export default function MovieDetailScreen() {
                 {formatRuntime(movie.runtime)}
               </AppText>
             </View>
+
+            <Pressable
+              onPress={handleWatchNow}
+              className="mt-6 h-14 flex-row items-center justify-center rounded-2xl bg-white px-5"
+              style={({ pressed }) => ({
+                transform: [{ scale: pressed ? 0.96 : 1 }],
+              })}
+            >
+              <Ionicons name="play" size={18} color="black" />
+              <AppText
+                className="ml-2 text-base"
+                style={{ color: "black", fontFamily: "InterBold" }}
+              >
+                Watch Now
+              </AppText>
+            </Pressable>
           </LinearGradient>
 
           <Pressable
@@ -262,7 +304,7 @@ export default function MovieDetailScreen() {
             accessibilityLabel="Go back"
             onPress={() => router.back()}
             className="absolute left-5 h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/35"
-            style={{ top: insets.top + 10 }}
+            style={{ top: 14 }}
           >
             <Ionicons name="chevron-back" size={24} color="white" />
           </Pressable>
@@ -355,6 +397,6 @@ export default function MovieDetailScreen() {
           onMoviePress={handleMoviePress}
         />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

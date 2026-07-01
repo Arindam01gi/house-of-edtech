@@ -20,6 +20,15 @@ export interface TMDBCastMember {
   profile_path: string | null;
 }
 
+export interface TMDBVideo {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+}
+
 export interface TMDBMovieDetail extends TMDBMovie {
   genres: TMDBGenre[];
   runtime: number | null;
@@ -28,6 +37,21 @@ export interface TMDBMovieDetail extends TMDBMovie {
   credits?: {
     cast: TMDBCastMember[];
   };
+  videos?: {
+    results: TMDBVideo[];
+  };
+}
+
+export interface TMDBMovieChange {
+  id: number;
+  adult: boolean;
+}
+
+export interface TMDBMovieChangesResponse {
+  page: number;
+  results: TMDBMovieChange[];
+  total_pages: number;
+  total_results: number;
 }
 
 export interface Movie {
@@ -38,6 +62,8 @@ export interface Movie {
   rating: number;
   releaseDate: string;
   overview: string;
+  youtubeKey?: string;
+  youtubeUrl?: string;
 }
 
 export interface Genre {

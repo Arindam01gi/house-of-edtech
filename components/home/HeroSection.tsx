@@ -6,11 +6,12 @@ import {
   Animated,
   Dimensions,
   ImageBackground,
+  Linking,
   Pressable,
   View,
 } from "react-native";
 import { useHeroMovies } from "@/hooks/useHeroMovies";
-import { useState, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AppText } from "@/components/ui/AppText";
 import { Movie } from "@/types/movie";
 import { useAppTheme } from "@/providers/AppThemeProvider";
@@ -50,6 +51,15 @@ export default function HeroSection() {
   const { colors, isDark } = useAppTheme();
   const { data, isLoading, error, refetch } = useHeroMovies();
   const scrollX = useRef(new Animated.Value(0)).current;
+  const handleWatchNow = useCallback((movie: Movie) => {
+    const url =
+      movie.youtubeUrl ??
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        `${movie.title} official trailer`,
+      )}`;
+
+    void Linking.openURL(url);
+  }, []);
 
   if (isLoading) {
     return (
@@ -159,7 +169,9 @@ export default function HeroSection() {
                   "rgba(11, 11, 15, 0.15)",
                   "rgba(11, 11, 15, 0.45)",
                   isDark ? "rgba(11, 11, 15, 0.80)" : "rgba(16, 18, 26, 0.74)",
-                  isDark ? "rgba(11, 11, 15, 0.96)" : "rgba(247, 248, 252, 0.62)",
+                  isDark
+                    ? "rgba(11, 11, 15, 0.96)"
+                    : "rgba(247, 248, 252, 0.62)",
                   colors.background,
                 ]}
                 locations={[0, 0.4, 0.74, 0.92, 1]}
@@ -216,6 +228,7 @@ export default function HeroSection() {
                   {/* Action buttons */}
                   <View className="mt-6 flex-row items-center gap-3">
                     <Pressable
+                      onPress={() => handleWatchNow(item)}
                       style={({ pressed }) => [
                         { transform: [{ scale: pressed ? 0.96 : 1 }] },
                       ]}
