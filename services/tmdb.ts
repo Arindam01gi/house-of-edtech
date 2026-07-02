@@ -6,6 +6,7 @@ import {
   TMDBMovie,
   TMDBMovieChangesResponse,
   TMDBMovieDetail,
+  TMDBMovieResponse,
   TMDBVideo,
 } from "@/types/movie";
 
@@ -233,4 +234,38 @@ export async function getSimilarMovies(movieId: number): Promise<Movie[]> {
   }
 
   return data.results.map(mapMovie);
+}
+
+export async function discoverMovies(page = 1) {
+  const url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&include_adult=false&include_video=false&language=en-US&page=${page}&sort_by=popularity.desc`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Failed to discover movies");
+  }
+
+  const data = (await response.json()) as TMDBMovieResponse;
+
+  return {
+    page: data.page,
+    totalPages: data.total_pages,
+    movies: (data.results || []).map(mapMovie),
+  };
+}
+
+export async function searchMovies(query: string, page = 1) {
+  const url = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=${page}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Failed to search movies");
+  }
+
+  const data = (await response.json()) as TMDBMovieResponse;
+
+  return {
+    page: data.page,
+    totalPages: data.total_pages,
+    movies: (data.results || []).map(mapMovie),
+  };
 }

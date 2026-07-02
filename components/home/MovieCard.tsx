@@ -4,7 +4,7 @@ import { Movie } from "@/types/movie";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React, { memo, useMemo } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, DimensionValue } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,6 +15,8 @@ type Props = {
   movie: Movie;
   size?: "poster" | "compact";
   onPress?: (movie: Movie) => void;
+  width?: DimensionValue;
+  imageHeight?: number;
 };
 
 const CARD_WIDTH = {
@@ -22,11 +24,11 @@ const CARD_WIDTH = {
   compact: 132,
 };
 
-function MovieCard({ movie, size = "poster", onPress }: Props) {
+function MovieCard({ movie, size = "poster", onPress, width: customWidth, imageHeight: customImageHeight }: Props) {
   const { colors } = useAppTheme();
   const scale = useSharedValue(1);
-  const width = CARD_WIDTH[size];
-  const imageHeight = size === "poster" ? 220 : 184;
+  const width = customWidth !== undefined ? customWidth : CARD_WIDTH[size];
+  const imageHeight = customImageHeight !== undefined ? customImageHeight : (size === "poster" ? 220 : 184);
 
   const releaseYear = useMemo(
     () => (movie.releaseDate ? movie.releaseDate.split("-")[0] : "New"),

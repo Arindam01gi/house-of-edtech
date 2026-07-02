@@ -8,6 +8,13 @@ export interface TMDBMovie {
   overview: string;
 }
 
+export interface TMDBMovieResponse {
+  page: number;
+  results: TMDBMovie[];
+  total_pages: number;
+  total_results: number;
+}
+
 export interface TMDBGenre {
   id: number;
   name: string;

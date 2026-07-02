@@ -1,31 +1,22 @@
 import Container from "@/components/common/Container";
 import { AppText } from "@/components/ui/AppText";
-import { AppThemeMode, useAppTheme } from "@/providers/AppThemeProvider";
+import { useAppTheme } from "@/providers/AppThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, View } from "react-native";
-
-const themeOptions: {
-  id: AppThemeMode;
-  title: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  {
-    id: "dark",
-    title: "Dark",
-    description: "Premium cinema-style interface.",
-    icon: "moon-outline",
-  },
-  {
-    id: "light",
-    title: "Light",
-    description: "Bright interface for daytime viewing.",
-    icon: "sunny-outline",
-  },
-];
+import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 export default function SettingsScreen() {
-  const { colors, mode, setTheme } = useAppTheme();
+  const { colors, isDark, toggleTheme } = useAppTheme();
+
+  const knobStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateX: withTiming(isDark ? 22 : 2, { duration: 200 }),
+        },
+      ],
+    };
+  });
 
   return (
     <Container edges={["top", "left", "right"]}>
@@ -41,7 +32,7 @@ export default function SettingsScreen() {
         </AppText>
 
         <View
-          className="mt-8 rounded-3xl border p-4"
+          className="mt-8 rounded-3xl border p-5"
           style={{
             backgroundColor: colors.surface,
             borderColor: colors.border,
@@ -54,66 +45,62 @@ export default function SettingsScreen() {
             className="mt-1 text-sm leading-5"
             style={{ color: colors.mutedText }}
           >
-            Choose how House of EdTech looks on this device.
+            Adjust the theme of House of EdTech.
           </AppText>
 
-          <View className="mt-5 gap-3">
-            {themeOptions.map((option) => {
-              const selected = mode === option.id;
-
-              return (
-                <Pressable
-                  key={option.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  onPress={() => setTheme(option.id)}
-                  className="flex-row items-center rounded-2xl border p-4"
-                  style={{
-                    backgroundColor: selected
-                      ? colors.elevated
-                      : colors.background,
-                    borderColor: selected ? colors.primary : colors.border,
-                  }}
+          <Pressable
+            onPress={toggleTheme}
+            accessibilityRole="button"
+            accessibilityLabel="Toggle Dark Mode"
+            className="mt-5 flex-row items-center justify-between rounded-2xl border p-4"
+            style={{
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+            }}
+          >
+            <View className="flex-row items-center">
+              <View
+                className="h-11 w-11 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: colors.surface }}
+              >
+                <Ionicons
+                  name={isDark ? "moon" : "sunny"}
+                  size={22}
+                  color={isDark ? colors.primary : "#EAB308"}
+                />
+              </View>
+              <View className="ml-4">
+                <AppText
+                  className="text-base font-bold"
+                  style={{ color: colors.text }}
                 >
-                  <View
-                    className="h-11 w-11 items-center justify-center rounded-2xl"
-                    style={{ backgroundColor: colors.surface }}
-                  >
-                    <Ionicons
-                      name={option.icon}
-                      size={22}
-                      color={selected ? colors.primary : colors.mutedText}
-                    />
-                  </View>
+                  Dark Mode
+                </AppText>
+                <AppText
+                  className="mt-0.5 text-xs font-medium"
+                  style={{ color: colors.mutedText }}
+                >
+                  {isDark ? "Premium cinema style" : "Bright daytime style"}
+                </AppText>
+              </View>
+            </View>
 
-                  <View className="ml-4 flex-1">
-                    <AppText
-                      className="text-base font-bold"
-                      style={{ color: colors.text }}
-                    >
-                      {option.title}
-                    </AppText>
-                    <AppText
-                      className="mt-1 text-xs leading-4"
-                      style={{ color: colors.mutedText }}
-                    >
-                      {option.description}
-                    </AppText>
-                  </View>
-
-                  {selected ? (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={24}
-                      color={colors.primary}
-                    />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
+            {/* Custom Animated Toggle Switch */}
+            <View
+              className="h-7 w-12 justify-center rounded-full"
+              style={{
+                backgroundColor: isDark ? colors.primary : (isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"),
+              }}
+            >
+              <Animated.View
+                className="h-6 w-6 rounded-full bg-white shadow-sm"
+                style={knobStyle}
+              />
+            </View>
+          </Pressable>
         </View>
       </View>
     </Container>
   );
 }
+
