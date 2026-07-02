@@ -1,57 +1,7 @@
 import { AppText } from "@/components/ui/AppText";
 import { View, Pressable, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from "react-native-reanimated";
 
-type HeaderButtonProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress?: () => void;
-  badge?: boolean;
-};
-
-function HeaderButton({ icon, onPress, badge }: HeaderButtonProps) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-    >
-      <Animated.View style={animatedStyle}>
-        <View
-          style={{ borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.20)" }}
-          className="relative items-center justify-center w-10 h-10 rounded-full bg-white/10"
-        >
-          <Ionicons name={icon} size={20} color="#FFFFFF" />
-          {badge && (
-            <View
-              style={{ borderWidth: 1, borderColor: "black" }}
-              className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-red-500"
-            />
-          )}
-        </View>
-      </Animated.View>
-    </Pressable>
-  );
-}
 
 export default function HomeHeader() {
   const insets = useSafeAreaInsets();
@@ -82,16 +32,6 @@ export default function HomeHeader() {
 
       {/* Right controls */}
       <View className="flex-row items-center gap-3">
-        <HeaderButton
-          icon="search-outline"
-          onPress={() => console.log("Search pressed")}
-        />
-        <HeaderButton
-          icon="notifications-outline"
-          badge
-          onPress={() => console.log("Notifications pressed")}
-        />
-
         {/* Profile Avatar */}
         <Pressable
           onPress={() => console.log("Profile pressed")}

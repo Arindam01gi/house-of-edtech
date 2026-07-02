@@ -74,22 +74,15 @@ export default function SettingsScreen() {
                   className="text-base font-bold"
                   style={{ color: colors.text }}
                 >
-                  Dark Mode
+                  {isDark ? "Dark Mode" : "Light Mode"}
                 </AppText>
-                <AppText
-                  className="mt-0.5 text-xs font-medium"
-                  style={{ color: colors.mutedText }}
-                >
-                  {isDark ? "Premium cinema style" : "Bright daytime style"}
-                </AppText>
+
               </View>
             </View>
-
-            {/* Custom Animated Toggle Switch */}
             <View
               className="h-7 w-12 justify-center rounded-full"
               style={{
-                backgroundColor: isDark ? colors.primary : (isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"),
+                backgroundColor: isDark ? colors.primary : "rgba(0, 0, 0, 0.15)",
               }}
             >
               <Animated.View
